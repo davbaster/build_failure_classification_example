@@ -1,0 +1,44 @@
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.8.6-jdk-11-slim'
+            args '-v /root/.m2:/root/.m2'
+        }
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/davbaster/cucumber-bdd-testing.git'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                //sh 'mvn -Dmaven.test.failure.ignore=true clean test'
+                //sh 'mvn test -Dcucumber.features="src/test/resources/features/Online shopping cart test Jenkins_59001.feature"'
+
+                script {
+                    // Groovy variable declaration should be inside the script block
+                    //testsToRunConverted = "src/test/resources/features/shopping_cart.feature"
+                    testsToRunConverted = "src/test/resources/features/"
+                    // Now call the shell step with the Groovy variable
+                    sh "mvn clean test -Dcucumber.features='${testsToRunConverted}'"
+                    //sh "mvn com.microfocus.adm.almoctane.bdd:bdd2octane:run -DreportFiles='**/target/surefire-reports/*.xml' -DfeatureFiles='${testsToRunConverted}' -Dframework='cucumber-jvm' -DresultFile='target/bdd2octane-reports/OctaneGherkinResults.xml'"
+                    sh "mvn com.microfocus.adm.almoctane.bdd:bdd2octane:1.1.8:run -X -DreportFiles='**/target/surefire-reports/*.xml' -DfeatureFiles='${testsToRunConverted}' -Dframework='cucumber-jvm' -DresultFile='target/bdd2octane-reports/OctaneGherkinResults.xml'"
+                    //sh "mvn bdd2octane:run -DreportFiles='**/target/surefire-reports/*.xml' -DfeatureFiles='${testsToRunConverted}' -Dframework='cucumber-jvm' -DresultFile='target/bdd2octane-reports/OctaneGherkinResults.xml'"
+
+                }
+            }
+        }
+        stage('Results') {
+            steps {
+                publishGherkinResults '**/*OctaneGherkinResults.xml'
+            }
+        }
+        stage('Deliver') {
+            steps {
+                echo 'Delivering ./jenkins/scripts/deliver.sh'
+            }
+        }
+    }
+}
